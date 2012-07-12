@@ -58,7 +58,7 @@ class Configuration
       Table[key]
     end
   end
-  send :extend, ClassMethods 
+  send :extend, ClassMethods
 
   module InstanceMethods
     attr 'name'
@@ -113,7 +113,7 @@ class Configuration
 
     instance_methods.each do |m|
       undef_method m unless m[Protected]
-    end 
+    end
 
     Kernel.methods.each do |m|
       next if m[Protected]
@@ -134,8 +134,15 @@ class Configuration
 
     def self.evaluate configuration, options = {}, &block
       dsl = new configuration
-      
-      options.each{|key, value| Pure[dsl].send key, value}
+
+      options.each do |key, value|
+        if value.is_a?(Hash)
+          Pure[dsl].send key, evaluate(dsl, value)
+        else
+          Pure[dsl].send key, value
+        end
+      end
+
       Pure[dsl].instance_eval(&block) if block
 
       Pure[dsl].instance_eval{ @__configuration }
@@ -164,7 +171,7 @@ class Configuration
         name = m.to_s
         configuration =
           if @__configuration.respond_to?(name) and Configuration === @__configuration.send(name)
-            @__configuration.send name 
+            @__configuration.send name
           else
             Configuration.new name
           end
@@ -208,7 +215,7 @@ class Configuration
     ::Object.instance_methods.each do |m|
       Instance_Methods[m.to_s] = ::Object.instance_method m
       undef_method m unless m[Protected]
-    end 
+    end
 
     def method_missing m, *a, &b
       Instance_Methods[m.to_s].bind(@object).call(*a, &b)

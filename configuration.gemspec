@@ -30,10 +30,11 @@ Gem::Specification::new do |spec|
  "samples/e.rb",
  "samples/f.rb",
  "test",
+ "test/defaults_test.rb",
  "test/overwrite_test.rb"]
 
   spec.executables = []
-  
+
   spec.require_path = "lib"
 
   spec.test_files = nil
