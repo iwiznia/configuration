@@ -83,7 +83,7 @@ class Configuration
     def to_hash
       inject({}){ |h,name|
         val = __send__(name.to_sym)
-        h.update name.to_sym => Configuration === val ? val.to_hash : val
+        h.update name.to_sym => Configuration == val.class ? val.to_hash : val
       }
     end
 
@@ -95,7 +95,7 @@ class Configuration
       ret = self.class.new @name
       each do |name|
         val = __send__ name.to_sym
-        if Configuration === val
+        if Configuration == val.class
           val = val.dup
           val.instance_variable_set('@__parent', ret)
           DSL.evaluate(ret, name.to_sym => val)
@@ -170,7 +170,7 @@ class Configuration
         parent = @__configuration
         name = m.to_s
         configuration =
-          if @__configuration.respond_to?(name) and Configuration === @__configuration.send(name)
+          if @__configuration.respond_to?(name) and Configuration == @__configuration.send(name).class
             @__configuration.send name
           else
             Configuration.new name

@@ -48,4 +48,6 @@ Gem::Specification::new do |spec|
   spec.author = "Ara T. Howard"
   spec.email = "ara.t.howard@gmail.com"
   spec.homepage = "https://github.com/ahoward/configuration"
+
+  spec.add_development_dependency 'minitest'
 end
