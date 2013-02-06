@@ -1,6 +1,9 @@
 = configuration.rb
 pure ruby scoped configuration files
 
+
+= Configuration {<img src="https://secure.travis-ci.org/iwiznia/configuration.png" />}[http://travis-ci.org/iwiznia/configuration]
+
 == Description
 configuration.rb provides a mechanism for configuring ruby programs with
 ruby configuration files.  a configuration.rb file, for example
