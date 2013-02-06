@@ -7,6 +7,7 @@ GEM
   remote: https://rubygems.org/
   specs:
     minitest (4.5.0)
+    rake (0.9.2)
 
 PLATFORMS
   ruby
@@ -14,3 +15,4 @@ PLATFORMS
 DEPENDENCIES
   configuration!
   minitest
+  rake
