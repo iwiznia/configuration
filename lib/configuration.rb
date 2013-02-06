@@ -17,6 +17,7 @@ class Configuration
     def for name, options = nil, &block
       name = name.to_s
       options = options.to_hash if options.is_a?( Configuration )
+      options = self.for(options).to_hash if options.is_a?( String )
 
       if Table.has_key?(name)
         if options or block
@@ -58,8 +59,12 @@ class Configuration
       Table[key]
     end
 
-    def method_missing(*name)
-      self.for(name.first)
+    def method_missing(method, *options)
+      begin
+        self.for(method) if options.empty?
+      rescue LoadError
+        super
+      end
     end
   end
   send :extend, ClassMethods

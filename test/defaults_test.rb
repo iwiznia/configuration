@@ -4,7 +4,10 @@ require 'configuration.rb'
 describe Configuration do
 
   before do
-    @b = Configuration.for('b') {
+    @a = Configuration.for('a') {
+      some "thing"
+    }
+    @b = Configuration.for('b', @a) {
       host "codeforpeople.com"
 
       mail {
@@ -17,7 +20,7 @@ describe Configuration do
       }
     }
 
-    @c = Configuration.for('c', @b) {
+    @c = Configuration.for('c', 'b') {
       foo 'bar'
       nesting {
         one -1
@@ -27,6 +30,8 @@ describe Configuration do
   end
 
   it "must return default values" do
+    @b.some.must_equal @a.some
+    @c.some.must_equal @a.some
     @b.host.must_equal @c.host
     @b.mail.must_equal @c.mail
     @b.mail.host.must_equal @c.mail.host
