@@ -1,5 +1,5 @@
 class Configuration
-  Configuration::Version = '1.3.2'
+  Configuration::Version = '1.3.3'
   def Configuration.version() Configuration::Version end
 
   Path = [
@@ -56,6 +56,10 @@ class Configuration
         $LOAD_PATH.replace load_path
       end
       Table[key]
+    end
+
+    def method_missing(*name)
+      self.for(name.first)
     end
   end
   send :extend, ClassMethods
