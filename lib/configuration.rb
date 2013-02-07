@@ -1,5 +1,5 @@
 class Configuration
-  Configuration::Version = '1.3.3'
+  Configuration::Version = '1.3.4'
   def Configuration.version() Configuration::Version end
 
   Path = [
@@ -59,12 +59,8 @@ class Configuration
       Table[key]
     end
 
-    def method_missing(method, *options)
-      begin
-        self.for(method) if options.empty?
-      rescue LoadError
-        super
-      end
+    def const_missing(name)
+      self.for(name.to_s.downcase)
     end
   end
   send :extend, ClassMethods

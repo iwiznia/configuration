@@ -2,11 +2,11 @@ require 'minitest/autorun'
 require 'configuration.rb'
 
 describe Configuration do
-
   before do
     @a = Configuration.for('a') {
       some "thing"
     }
+
     @b = Configuration.for('b', @a) {
       host "codeforpeople.com"
 
@@ -40,4 +40,7 @@ describe Configuration do
     @c.nesting.three.must_equal 3
   end
 
+  it "must get configuration by constant" do
+    assert @c === Configuration::C
+  end
 end
