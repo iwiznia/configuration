@@ -1,5 +1,8 @@
 class Configuration
-  include Enumerable
+  instance_methods.each do |meth|
+    # skipping undef of methods that "may cause serious problems"
+    undef_method(meth) if meth !~ /^(__|object_id|class|include|instance_eval|define_singleton_method|methods|is_a?)/
+  end
 
   Configuration::Version = '1.4.0'
   def Configuration.version
@@ -53,10 +56,13 @@ class Configuration
   end
 
   def to_hash
-    inject({}){ |h,name|
-      val = __send__(name.to_sym)
-      h.update name.to_sym => Configuration == val.class ? val.to_hash : val
-    }
+    hash = {}
+    hash.tap do
+      self.each do|name|
+        val = __send__(name.to_sym)
+        hash.update name.to_sym => Configuration == val.class ? val.to_hash : val
+      end
+    end
   end
 
   def self.for(name, inherits = nil, &block)
