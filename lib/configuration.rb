@@ -1,6 +1,10 @@
 class Configuration
-  Configuration::Version = '1.3.4'
-  def Configuration.version() Configuration::Version end
+  include Enumerable
+
+  Configuration::Version = '1.4.0'
+  def Configuration.version
+    Configuration::Version
+  end
 
   Path = [
     if defined? CONFIGURATION_PATH
@@ -13,234 +17,81 @@ class Configuration
   Table = Hash.new
   Error = Class.new StandardError
 
-  module ClassMethods
-    def for name, options = nil, &block
-      name = name.to_s
-      options = options.to_hash if options.is_a?( Configuration )
-      options = self.for(options).to_hash if options.is_a?( String )
+  def initialize(*argv, &block)
+    inherits = Hash === argv.last ? argv.pop : Hash.new
+    @name = argv.shift
+    @inherits = inherits
+    instance_eval &block
+  end
 
-      if Table.has_key?(name)
-        if options or block
-          configuration = Table[name]
-          Table[name] = DSL.evaluate(configuration, options || {}, &block)
-        else
-          Table[name]
-        end
-      else
-        if options or block
-          Table[name] = new name, options || {}, &block
-        else
-          load name
-        end
-      end
-    end
-
-    def path *value
-      return self.path = value.first unless value.empty?
-      Path
-    end
-
-    def path= value
-      Path.clear
-      Path.replace [value].compact.flatten.join(File::PATH_SEPARATOR).split(File::PATH_SEPARATOR)
-    end
-
-    def load name
-      name = name.to_s
-      name = name + '.rb' unless name[%r/\.rb$/]
-      key = name.sub %r/\.rb$/, ''
-      load_path = $LOAD_PATH.dup
-      begin
-        $LOAD_PATH.replace(path + load_path)
-        ::Kernel.load name
-      ensure
-        $LOAD_PATH.replace load_path
-      end
-      Table[key]
-    end
-
-    def const_missing(name)
-      self.for(name.to_s.downcase)
+  def method_missing(method, *args, &block)
+    if !args.empty?
+      define_singleton_method(method, lambda { args.first })
+    elsif block
+      subconfig = self.class.new(method, @inherits[method], &block)
+      define_singleton_method(method, lambda { subconfig })
+    elsif @inherits[method]
+      @inherits[method]
+    else
+      raise "Config #{method} not defined!"
     end
   end
-  send :extend, ClassMethods
 
-  module InstanceMethods
-    attr 'name'
-
-    def initialize *argv, &block
-      options = Hash === argv.last ? argv.pop : Hash.new
-      @name = argv.shift
-      DSL.evaluate(self, options, &block)
-    end
-
-    def method_missing m, *a, &b
-      return(Pure[@__parent].send m, *a, &b) rescue super if @__parent
-      super
-    end
-
-    include Enumerable
-
-    def each
-      methods(false).each{|v| yield v }
-    end
-
-    def to_hash
-      inject({}){ |h,name|
-        val = __send__(name.to_sym)
-        h.update name.to_sym => Configuration == val.class ? val.to_hash : val
-      }
-    end
-
-    def update options = {}, &block
-      DSL.evaluate(self, options, &block)
-    end
-
-    def dup
-      ret = self.class.new @name
-      each do |name|
-        val = __send__ name.to_sym
-        if Configuration == val.class
-          val = val.dup
-          val.instance_variable_set('@__parent', ret)
-          DSL.evaluate(ret, name.to_sym => val)
-        else
-          DSL.evaluate(ret, name.to_sym => (val.dup rescue val))
-        end
-      end
-      ret
+  if !methods.include?(:define_singleton_method)
+    def define_singleton_method(method, function)
+      singleton = class << self; self end
+      singleton.send(:define_method, method, function)
     end
   end
-  send :include, InstanceMethods
 
-  class DSL
-    Protected = %r/^__|^object_id$/
+  def each
+    (self.methods(false) + @inherits.keys).uniq.each{|v| yield v }
+  end
 
-    instance_methods.each do |m|
-      undef_method m unless m[Protected]
+  def to_hash
+    inject({}){ |h,name|
+      val = __send__(name.to_sym)
+      h.update name.to_sym => Configuration == val.class ? val.to_hash : val
+    }
+  end
+
+  def self.for(name, inherits = nil, &block)
+    name = name.to_s
+    inherits = inherits.to_hash if inherits.is_a?( Configuration )
+    inherits = self.for(inherits).to_hash if inherits.is_a?( String )
+
+    if inherits or block
+      Table[name] = self.new(name, inherits || {}, &block)
+    else
+      Table.has_key?(name) ? Table[name] : load(name)
     end
+  end
 
-    Kernel.methods.each do |m|
-      next if m[Protected]
-      module_eval <<-code
-        def #{ m }(*a, &b)
-          method_missing '#{ m }', *a, &b
-        end
-      code
-    end
+  def self.path(*value)
+    return self.path = value.first unless value.empty?
+    Path
+  end
 
-    def Send(m, *a, &b)
-      Method(m).call(*a, &b)
-    end
+  def self.path=(value)
+    Path.clear
+    Path.replace [value].compact.flatten.join(File::PATH_SEPARATOR).split(File::PATH_SEPARATOR)
+  end
 
-    def Method m
-      @__configuration.method(m)
-    end
-
-    def self.evaluate configuration, options = {}, &block
-      dsl = new configuration
-
-      options.each do |key, value|
-        if value.is_a?(Hash)
-          Pure[dsl].send key, evaluate(dsl, value)
-        else
-          Pure[dsl].send key, value
-        end
-      end
-
-      Pure[dsl].instance_eval(&block) if block
-
-      Pure[dsl].instance_eval{ @__configuration }
-    end
-
-    def initialize configuration, &block
-      @__configuration = configuration
-      @__singleton_class =
-        class << @__configuration
-          self
-        end
-    end
-
-    def __configuration__
-      @__configuration
-    end
-
-    undef_method(:method_missing) rescue nil
-    def method_missing(m, *a, &b)
-      if(a.empty? and b.nil?)
-        return Pure[@__configuration].send(m, *a, &b)
-      end
-      if b
-        raise ArgumentError unless a.empty?
-        parent = @__configuration
-        name = m.to_s
-        configuration =
-          if @__configuration.respond_to?(name) and Configuration == @__configuration.send(name).class
-            @__configuration.send name
-          else
-            Configuration.new name
-          end
-        Pure[configuration].instance_eval{ @__parent = parent }
-        DSL.evaluate configuration, &b
-        value = configuration
-      end
-      unless a.empty?
-        value = a.size == 1 ? a.first : a
-      end
-      @__singleton_class.module_eval do
-        define_method(m){ value }
-      end
-    end
-
-    verbose = $VERBOSE
+  def self.load(name)
+    name = name.to_s
+    name = name + '.rb' unless name[%r/\.rb$/]
+    key = name.sub %r/\.rb$/, ''
+    load_path = $LOAD_PATH.dup
     begin
-      $VERBOSE = nil
-      def object_id(*args)
-        unless args.empty?
-          verbose = $VERBOSE
-          begin
-            $VERBOSE = nil
-            define_method(:object_id){ args.first }
-          ensure
-            $VERBOSE = verbose
-          end
-        else
-          return Pure[@__configuration].object_id
-        end
-      end
+      $LOAD_PATH.replace(path + load_path)
+      ::Kernel.load name
     ensure
-      $VERBOSE = verbose
+      $LOAD_PATH.replace load_path
     end
+    Table[key]
   end
 
-  class Pure
-    Instance_Methods = Hash.new
-    Protected = %r/^__|^object_id$/
-
-    ::Object.instance_methods.each do |m|
-      Instance_Methods[m.to_s] = ::Object.instance_method m
-      undef_method m unless m[Protected]
-    end
-
-    def method_missing m, *a, &b
-      Instance_Methods[m.to_s].bind(@object).call(*a, &b)
-    end
-
-    def initialize object
-      @object = object
-    end
-
-    def Pure.[] object
-      new object
-    end
+  def self.const_missing(name)
+    self.for(name.to_s.downcase)
   end
 end
-
-def Configuration(*a, &b)
-  if a.empty? and b.nil?
-    const_get :Configuration
-  else
-    Configuration.new(*a, &b)
-  end
-end
-
