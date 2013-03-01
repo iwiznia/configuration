@@ -1,6 +1,5 @@
 require 'minitest/autorun'
 require 'configuration.rb'
-require "debugger"
 
 describe Configuration do
   before do
