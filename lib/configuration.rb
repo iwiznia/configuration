@@ -31,7 +31,11 @@ class Configuration
       subconfig = self.class.new(method, @inherits[method], &block)
       define_singleton_method(method, lambda { subconfig })
     elsif @inherits[method]
-      @inherits[method]
+      if @inherits[method].is_a?(Hash)
+        self.class.new(method, @inherits[method]) {}
+      else
+        @inherits[method]
+      end
     else
       raise "Config #{method} not defined!"
     end

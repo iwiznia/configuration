@@ -5,6 +5,9 @@ describe Configuration do
   before do
     @a = Configuration.for('a') {
       some "thing"
+      nesting {
+        testing "this"
+      }
     }
 
     @b = Configuration.for('b', @a) {
@@ -30,10 +33,14 @@ describe Configuration do
   end
 
   it "must return default values" do
+    @a.nesting.testing.must_equal "this"
+    @b.nesting.one.must_equal 1
+    @b.nesting.testing.must_equal "this"
+    @a.to_hash.must_equal({:some => "thing", :nesting => {:testing => "this"}})
     @b.some.must_equal @a.some
     @c.some.must_equal @a.some
     @b.host.must_equal @c.host
-    @b.mail.must_equal @c.mail
+    @b.mail.to_hash.must_equal @c.mail.to_hash
     @b.mail.host.must_equal @c.mail.host
     @b.nesting.two.must_equal @c.nesting.two
     @c.nesting.one.must_equal -1
