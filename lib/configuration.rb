@@ -37,7 +37,7 @@ class Configuration
         @inherits[method]
       end
     else
-      raise "Config #{method} not defined!"
+      raise Error.new("Config #{method} not defined!")
     end
   end
 

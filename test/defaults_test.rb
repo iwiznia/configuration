@@ -45,6 +45,7 @@ describe Configuration do
     @b.nesting.two.must_equal @c.nesting.two
     @c.nesting.one.must_equal -1
     @c.nesting.three.must_equal 3
+    lambda {@c.nesting.foo}.must_raise Configuration::Error
   end
 
   it "must get configuration by constant" do
