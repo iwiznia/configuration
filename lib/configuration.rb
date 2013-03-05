@@ -1,7 +1,7 @@
 class Configuration
   instance_methods.each do |meth|
     # skipping undef of methods that "may cause serious problems"
-    undef_method(meth) if meth !~ /^(__|object_id|class|include|instance_eval|define_singleton_method|methods|is_a?)/
+    undef_method(meth) if meth !~ /^(__|object_id|class|include|instance_eval|define_singleton_method|methods|is_a?|inspect|to_s)/
   end
 
   Configuration::Version = '1.4.0'
