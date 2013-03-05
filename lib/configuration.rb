@@ -24,7 +24,7 @@ class Configuration
     inherits = Hash === argv.last ? argv.pop : Hash.new
     @name = argv.shift
     @inherits = inherits
-    instance_eval &block
+    instance_eval(&block) if block
   end
 
   def method_missing(method, *args, &block)
