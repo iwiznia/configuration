@@ -51,4 +51,10 @@ describe Configuration do
   it "must get configuration by constant" do
     assert @c === Configuration::C
   end
+
+  it "must check the config has key" do
+    @c.has_key?(:not_exists).must_equal false
+    @c.has_key?(:foo).must_equal true
+    @c.has_key?(:some).must_equal true
+  end
 end

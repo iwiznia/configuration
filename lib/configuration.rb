@@ -1,7 +1,7 @@
 class Configuration
   instance_methods.each do |meth|
     # skipping undef of methods that "may cause serious problems"
-    undef_method(meth) if meth !~ /^(__|object_id|class|include|instance_eval|define_singleton_method|methods|is_a?|inspect|to_s)/
+    undef_method(meth) if meth !~ /^(__|object_id|class|include|instance_eval|define_singleton_method|methods|is_a?|inspect|to_s|respond_to?)/
   end
 
   Configuration::Version = '1.4.0'
@@ -42,6 +42,10 @@ class Configuration
     else
       raise Error.new("Config #{method} not defined!")
     end
+  end
+
+  def has_key?(key)
+    self.respond_to?(key)
   end
 
   if !methods.include?(:define_singleton_method)
