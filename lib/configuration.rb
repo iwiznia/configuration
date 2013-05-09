@@ -4,7 +4,7 @@ class Configuration
     undef_method(meth) if meth !~ /^(__|object_id|class|include|instance_eval|define_singleton_method|methods|is_a?|inspect|to_s|respond_to?)/
   end
 
-  Configuration::Version = '1.4.0'
+  Configuration::Version = '1.4.2'
   def Configuration.version
     Configuration::Version
   end
