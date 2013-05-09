@@ -9,6 +9,8 @@ describe Configuration do
         testing "this"
       }
       none false
+      a_hash({:value => 1})
+      a_hash_with_strings({"value" => 2})
     }
 
     @b = Configuration.for('b', @a) {
@@ -35,6 +37,8 @@ describe Configuration do
 
   it "must return default values" do
     @a.none.must_equal false
+    @a.a_hash.must_equal({:value => 1})
+    @a.a_hash_with_strings.must_equal({"value" => 2})
     @a.nesting.testing.must_equal "this"
     @b.nesting.one.must_equal 1
     @b.nesting.testing.must_equal "this"

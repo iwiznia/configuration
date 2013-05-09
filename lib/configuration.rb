@@ -33,11 +33,11 @@ class Configuration
     elsif block
       subconfig = self.class.new(method, @inherits[method], &block)
       define_singleton_method(method, lambda { subconfig })
-    elsif @inherits.has_key?(method)
+    elsif @inherits.has_key?(method) || (@inherits.is_a?(Hash) && @inherits.has_key?(method.to_s))
       if @inherits[method].is_a?(Hash)
-        self.class.new(method, @inherits[method]) {}
+        self.class.new(method, @inherits[method])
       else
-        @inherits[method]
+        @inherits.has_key?(method) ? @inherits[method] : @inherits[method.to_s]
       end
     else
       raise Error.new("Config #{method} not defined!")
@@ -60,11 +60,10 @@ class Configuration
   end
 
   def to_hash
-    hash = {}
-    hash.tap do
+    {}.tap do |hash|
       self.each do|name|
-        val = __send__(name.to_sym)
-        hash.update name.to_sym => Configuration == val.class ? val.to_hash : val
+        val = __send__(name)
+        hash.update name => Configuration == val.class ? val.to_hash : val
       end
     end
   end
