@@ -33,7 +33,7 @@ class Configuration
     elsif block
       subconfig = self.class.new(method, @inherits[method], &block)
       define_singleton_method(method, lambda { subconfig })
-    elsif @inherits[method]
+    elsif @inherits.has_key?(method)
       if @inherits[method].is_a?(Hash)
         self.class.new(method, @inherits[method]) {}
       else

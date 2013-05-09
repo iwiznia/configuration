@@ -8,6 +8,7 @@ describe Configuration do
       nesting {
         testing "this"
       }
+      none false
     }
 
     @b = Configuration.for('b', @a) {
@@ -33,6 +34,7 @@ describe Configuration do
   end
 
   it "must return default values" do
+    @a.none.must_equal false
     @a.nesting.testing.must_equal "this"
     @b.nesting.one.must_equal 1
     @b.nesting.testing.must_equal "this"
