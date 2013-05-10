@@ -1,7 +1,7 @@
 class Configuration
   instance_methods.each do |meth|
     # skipping undef of methods that "may cause serious problems"
-    undef_method(meth) if meth !~ /^(__|object_id|class|include|instance_eval|define_singleton_method|methods|is_a\?|to_s|respond_to\?|send)/
+    undef_method(meth) if meth !~ /^(__|object_id|class|include|instance_eval|define_singleton_method|methods|is_a\?|to_s|respond_to\?|send|inspect)/
   end
 
   Configuration::Version = '1.4.4'
@@ -21,7 +21,7 @@ class Configuration
   Error = Class.new StandardError
 
   def initialize(*argv, &block)
-    inherits = Configuration === argv.last ? argv.pop : {}
+    inherits = Configuration === argv.last ? argv.pop : nil
     @name = argv.shift
     @inherits = inherits
     instance_eval(&block) if block
@@ -35,9 +35,9 @@ class Configuration
     if !args.empty?
       define_singleton_method(method, lambda { args.first.is_a?(Proc) ? args.first.call : args.first })
     elsif block
-      subconfig = self.class.new(method, @inherits.respond_to?(method) ? @inherits.send(method) : nil, &block)
+      subconfig = self.class.new(method, @inherits && @inherits.respond_to?(method) ? @inherits.send(method) : nil, &block)
       define_singleton_method(method, lambda { subconfig })
-    elsif @inherits.respond_to?(method)
+    elsif @inherits && @inherits.respond_to?(method)
       if @inherits.send(method).is_a?(Configuration)
         self.class.new(method, @inherits.send(method))
       else
@@ -56,15 +56,15 @@ class Configuration
   end
 
   def respond_to?(method)
-    super(method) || @inherits.respond_to?(method)
+    !!(super(method) || (@inherits && @inherits.respond_to?(method)))
   end
 
   def keys
-    self.methods(false)
+    (self.methods(false) + (@inherits ? @inherits.keys : [])).uniq
   end
 
   def each
-    (self.keys + @inherits.keys).uniq.each{|v| yield v }
+    self.keys.each{|v| yield v }
   end
 
   def to_hash

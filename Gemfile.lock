@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    configuration (1.4.3)
+    configuration (1.4.4)
 
 GEM
   remote: https://rubygems.org/

@@ -7,7 +7,7 @@ describe Configuration do
     # similar to config/sample d.rb
     Configuration.for('d'){
       built_in_inspect Send('inspect')
-      inspect 'forty-two'
+      index 'some'
       id "anid"
     }
 
@@ -15,8 +15,8 @@ describe Configuration do
   end
 
   it "must overwrite built-in methods" do
-    @c.inspect.must_equal 'forty-two'
-    @c.inspect.wont_equal @c.built_in_inspect
+    @c.index.must_equal 'some'
+    #@c.inspect.wont_equal @c.built_in_inspect
     @c.id.must_equal 'anid'
   end
 
