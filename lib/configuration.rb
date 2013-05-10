@@ -1,10 +1,10 @@
 class Configuration
   instance_methods.each do |meth|
     # skipping undef of methods that "may cause serious problems"
-    undef_method(meth) if meth !~ /^(__|object_id|class|include|instance_eval|define_singleton_method|methods|is_a?|inspect|to_s|respond_to?)/
+    undef_method(meth) if meth !~ /^(__|object_id|class|include|instance_eval|define_singleton_method|methods|is_a\?|to_s|respond_to\?|send)/
   end
 
-  Configuration::Version = '1.4.3'
+  Configuration::Version = '1.4.4'
   def Configuration.version
     Configuration::Version
   end
@@ -21,31 +21,31 @@ class Configuration
   Error = Class.new StandardError
 
   def initialize(*argv, &block)
-    inherits = Hash === argv.last ? argv.pop : Hash.new
+    inherits = Configuration === argv.last ? argv.pop : {}
     @name = argv.shift
     @inherits = inherits
     instance_eval(&block) if block
   end
 
+  def inherits
+    @inherits
+  end
+
   def method_missing(method, *args, &block)
     if !args.empty?
-      define_singleton_method(method, lambda { args.first })
+      define_singleton_method(method, lambda { args.first.is_a?(Proc) ? args.first.call : args.first })
     elsif block
-      subconfig = self.class.new(method, @inherits[method], &block)
+      subconfig = self.class.new(method, @inherits.respond_to?(method) ? @inherits.send(method) : nil, &block)
       define_singleton_method(method, lambda { subconfig })
-    elsif @inherits.has_key?(method) || (@inherits.is_a?(Hash) && @inherits.has_key?(method.to_s))
-      if @inherits[method].is_a?(Hash)
-        self.class.new(method, @inherits[method])
+    elsif @inherits.respond_to?(method)
+      if @inherits.send(method).is_a?(Configuration)
+        self.class.new(method, @inherits.send(method))
       else
-        @inherits.has_key?(method) ? @inherits[method] : @inherits[method.to_s]
+        @inherits.send(method)
       end
     else
       raise Error.new("Config #{method} not defined!")
     end
-  end
-
-  def has_key?(key)
-    self.respond_to?(key)
   end
 
   if !methods.include?(:define_singleton_method)
@@ -55,23 +55,30 @@ class Configuration
     end
   end
 
+  def respond_to?(method)
+    super(method) || @inherits.respond_to?(method)
+  end
+
+  def keys
+    self.methods(false)
+  end
+
   def each
-    (self.methods(false) + @inherits.keys).uniq.each{|v| yield v }
+    (self.keys + @inherits.keys).uniq.each{|v| yield v }
   end
 
   def to_hash
     {}.tap do |hash|
       self.each do|name|
         val = __send__(name)
-        hash.update name => Configuration == val.class ? val.to_hash : val
+        hash.update name.to_sym => Configuration == val.class ? val.to_hash : val
       end
     end
   end
 
   def self.for(name, inherits = nil, &block)
     name = name.to_s
-    inherits = inherits.to_hash if inherits.is_a?( Configuration )
-    inherits = self.for(inherits).to_hash if inherits.is_a?( String )
+    inherits = self.for(inherits) if inherits.is_a?( String )
 
     if inherits or block
       Table[name] = self.new(name, inherits || {}, &block)

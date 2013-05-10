@@ -3,7 +3,7 @@
 
 Gem::Specification::new do |spec|
   spec.name = "configuration"
-  spec.version = "1.4.3"
+  spec.version = "1.4.4"
   spec.platform = Gem::Platform::RUBY
   spec.summary = "configuration"
   spec.description = "description: configuration kicks the ass"
