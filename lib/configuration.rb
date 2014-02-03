@@ -32,10 +32,10 @@ class Configuration
   end
 
   def method_missing(method, *args, &block)
-    if !args.empty?
+    if !args.empty? && !block
       define_singleton_method(method, lambda { args.first.is_a?(Proc) ? args.first.call : args.first })
     elsif block
-      subconfig = self.class.new(method, @inherits && @inherits.respond_to?(method) ? @inherits.send(method) : nil, &block)
+      subconfig = self.class.new(method, @inherits && @inherits.respond_to?(method) && (args.count.zero? || !args.first) ? @inherits.send(method) : nil, &block)
       define_singleton_method(method, lambda { subconfig })
     elsif @inherits && @inherits.respond_to?(method)
       if @inherits.send(method).is_a?(Configuration)

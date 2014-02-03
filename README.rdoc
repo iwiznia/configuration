@@ -12,7 +12,7 @@ ruby configuration files.  a configuration.rb file, for example
     foo 'bar'
     port 42
   }
-  
+
 and loaded via the normal ruby require/load mechanism
 
   Kernel.load 'config/app.rb'
@@ -69,6 +69,25 @@ allow default values
 
   p c.a     #=> 10
   p c.b     #=> 2
+
+allow to override an entire scope, skipping inheritance
+
+  default = Configuration.for( 'default' ) {
+    a {
+      some 1
+      thing 2
+    }
+  }
+
+  c = Configuration.for( 'config', default ) {
+    a(true) {
+      thing 3
+    }
+  }
+
+  p c.thing #=> 3
+  p c.some  #=> Configuration::Error: Config some not defined!
+
 
 and not a whole lot else - configuration.rb is s very small library
 consisting of one file and < 150 loc

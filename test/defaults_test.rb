@@ -1,5 +1,6 @@
 require 'minitest/autorun'
 require 'lib/configuration.rb'
+#require 'ruby-debug' ; Debugger.start
 
 describe Configuration do
   before do
@@ -11,6 +12,9 @@ describe Configuration do
       none false
       a_hash({:value => 1})
       a_hash_with_strings({"value" => 2})
+      not_inherited {
+        one 1
+      }
     }
 
     @b = Configuration.for('b', @a) {
@@ -25,12 +29,18 @@ describe Configuration do
         two 2
       }
       evaluated_code Proc.new { Time.now }
+      not_inherited {
+        two 2
+      }
     }
 
     @c = Configuration.for('c', 'b') {
       foo 'bar'
       nesting {
         one -1
+        three 3
+      }
+      not_inherited(true) {
         three 3
       }
     }
@@ -44,7 +54,7 @@ describe Configuration do
     @a.nesting.testing.must_equal "this"
     @b.nesting.one.must_equal 1
     @b.nesting.testing.must_equal "this"
-    @a.to_hash.must_equal({:some => "thing", :nesting => {:testing => "this"}, :none => false, :a_hash => {:value => 1}, :a_hash_with_strings => {"value" => 2}})
+    @a.to_hash.must_equal({:some => "thing", :nesting => {:testing => "this"}, :none => false, :a_hash => {:value => 1}, :a_hash_with_strings => {"value" => 2}, :not_inherited => {:one => 1}})
     @b.some.must_equal @a.some
     @c.some.must_equal @a.some
     @b.host.must_equal @c.host
@@ -65,5 +75,11 @@ describe Configuration do
     @c.respond_to?(:not_exists).must_equal false
     @c.respond_to?(:foo).must_equal true
     @c.respond_to?(:some).must_equal true
+  end
+
+  it 'must not use the inherited value if true param is passed' do
+    @c.not_inherited
+    @c.not_inherited.three.must_equal 3
+    @c.not_inherited.respond_to?(:two).must_equal false
   end
 end
